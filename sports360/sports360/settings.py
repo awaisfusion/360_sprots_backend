@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent
@@ -75,8 +76,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': os.getenv('JWT_ACCESS_TOKEN_LIFETIME', '15'),
-    'REFRESH_TOKEN_LIFETIME': os.getenv('JWT_REFRESH_TOKEN_LIFETIME', '7'),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME', '15'))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME', '7'))),
 }
 
 AUTH_USER_MODEL = 'users.User'

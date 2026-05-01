@@ -82,16 +82,44 @@ class AdminRegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class LoginSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['email'] = user.email
-        token['role'] = user.role
-        token['is_verified'] = user.is_verified
-        token['is_business'] = user.is_business()
-        token['is_admin'] = user.is_admin()
-        return token
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No active account found with the given credentials")
+
+        if not user.check_password(password):
+            raise serializers.ValidationError("No active account found with the given credentials")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Account is inactive")
+
+        attrs['user'] = user
+        return attrs
+
+    def create(self, validated_data):
+        from rest_framework_simplejwt.tokens import RefreshToken
+        user = validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        # Add custom claims
+        refresh['email'] = user.email
+        refresh['role'] = user.role
+        refresh['is_verified'] = user.is_verified
+        refresh['is_business'] = user.is_business()
+        refresh['is_admin'] = user.is_admin()
+
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
 
 
 class SendVerificationCodeSerializer(serializers.Serializer):
